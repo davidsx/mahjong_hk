@@ -5,6 +5,7 @@ import 'package:mahjong/components/tableWindStage.dart';
 import 'package:mahjong/extensions/TransparentInkWell.dart';
 import 'package:mahjong/provider/mj_provider.dart';
 import 'package:mahjong/resources/color.dart';
+import 'package:mahjong/view/skeleton.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 
@@ -15,7 +16,7 @@ class TableBox extends StatelessWidget {
     return Consumer<MjProvider>(
       builder: (context, value, child) {
         return AspectRatio(
-          aspectRatio: 9 / 8,
+          aspectRatio: 11 / 10,
           child: Stack(
             children: <Widget>[
               // Align(alignment: Alignment.topLeft, child: Text("-1.0")),
@@ -115,11 +116,31 @@ class TableBox extends StatelessWidget {
                   ),
                 ),
               // * Wind + Stage
-              Positioned(
-                top: 10,
-                right: 10,
-                child: TableWindStage(),
-              ),
+              if (value.isLoading)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Skeleton(height: 30, width: 50, borderRadius: 15.0),
+                )
+              else if (value.isWaiting)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    height: 30,
+                    width: 50,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15.0),
+                      color: black.withOpacity(0.7),
+                    ),
+                    child: Center(
+                      child: Text(
+                        value.table.currentWindStage,
+                        style: TextStyle(color: white, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ),
               // * PlayerBox
               for (int i in [0, 1, 2, 3])
                 AnimatedAlign(
@@ -132,12 +153,44 @@ class TableBox extends StatelessWidget {
                   child: TablePlayerBox(i),
                 ),
               // * InstructionBox
+              // Center(
+              //   child: Theme(
+              //     data: Theme.of(context).copyWith(
+              //       canvasColor: Colors.transparent,
+              //     ),
+              //     child: TableInstructionBox(),
+              //   ),
+              // ),
               Center(
-                child: Theme(
-                  data: Theme.of(context).copyWith(
-                    canvasColor: Colors.transparent,
+                child: FractionallySizedBox(
+                  widthFactor: 1 / 3,
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Padding(
+                      padding: EdgeInsets.all(30.0),
+                      child: Material(
+                        color: transparent,
+                        shadowColor: transparent,
+                        elevation: 10,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              width: 2,
+                              color: white,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: black.withOpacity(0.1),
+                                blurRadius: 15,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  child: TableInstructionBox(),
                 ),
               ),
             ],

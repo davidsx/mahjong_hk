@@ -73,7 +73,6 @@ class Instruction {
       color = green;
       innerText = "開枱!";
       callback = () => tableProvider.startGame();
-      // callback = () => BlocProvider.of<TableBloc>(context).add(WaitingWinner());
     } else if (state == TableState.WaitingWinner) {
       innerText = "流局";
       callback = () => showDialog(
@@ -94,7 +93,6 @@ class Instruction {
         state == TableState.WaitingRuleset) {
       innerText = "取消";
       callback = () => tableProvider.cancelRound();
-      // callback = () => BlocProvider.of<TableBloc>(context).add(CancelRound());
     } else if (state == TableState.WaitingConfirm) {
       innerText = "確定";
       callback = () => tableProvider.roundConfirm();
