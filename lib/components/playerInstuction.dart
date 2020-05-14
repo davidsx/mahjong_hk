@@ -14,7 +14,7 @@ class TableInstructionBox extends StatefulWidget {
 class _TableInstructionBoxState extends State<TableInstructionBox> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<MjProvider>(
+    return Consumer<MJProvider>(
       builder: (context, value, child) {
         final Instruction instruction = Instruction.of(context);
 
@@ -53,7 +53,7 @@ class Instruction {
   Instruction(this.text, this.callback);
 
   factory Instruction.of(BuildContext context) {
-    final MjProvider tableProvider = Provider.of<MjProvider>(context);
+    final MJProvider tableProvider = Provider.of<MJProvider>(context);
     final TableState state = tableProvider.state;
     Widget text;
     VoidCallback callback;

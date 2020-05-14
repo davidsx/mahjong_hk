@@ -1,22 +1,23 @@
 import 'package:mahjong/models/base.dart';
-import 'package:mahjong/models/globals.dart';
 import 'package:mahjong/models/method.dart';
 import 'package:uuid/uuid.dart';
 
-enum RoundStatus { Empty, Normal, KeepDealer, ChangeDealer, SwitchPlayer, NewTable }
+enum RoundStatus { Empty, KeepDealer, ChangeDealer, SwitchPlayer, NewTable }
 
 class Round extends Model {
-  String winner;
-  List<String> loser;
-  List<String> players;
-  Method method;
-  int ruleIndex;
-  int winningAmount;
-  int losingAmount;
-  String windStage;
-  String id;
-  String tableId;
-  RoundStatus status;
+  final String id;
+  final String tableId;
+  final String winner;
+  final List<String> loser;
+  final List<String> players;
+  final Method method;
+  final int ruleIndex;
+  final int winningAmount;
+  final int losingAmount;
+  //String windStage;
+  final int roundStage;
+  // final String roundCaption;
+  final RoundStatus status;
 
   @override
   String toString() {
@@ -24,28 +25,25 @@ class Round extends Model {
   }
 
   factory Round.fromMap(Map<String, dynamic> data) {
-    Round tmp = Round.empty("", [""]);
+    // Round tmp = Round.empty("", [""], );
 
     return Round(
-      winner: data['winner'] ?? tmp.winner,
-      loser: data['loser'] != null
-          ? (data['loser'] as String).split(',')
-          : tmp.loser,
-      players: data['players'] != null
-          ? (data['players'] as String).split(',')
-          : tmp.players,
-      method:
-          data['method'] == null ? Method.values[data['method']] : tmp.method,
-      ruleIndex: data['ruleIndex'] ?? tmp.ruleIndex,
-      winningAmount: data['winning'] ?? 0,
-      losingAmount: data['losing'] ?? 0,
-      windStage: data['round'] ?? '',
-      // isRoundSame: Model.parseBool(data['isRoundSame']),
-      // isDealerChange: Model.parseBool(data['isDealerChange']),
-      // isSwitchPlayer: Model.parseBool(data['isSwitchPlayer']),
-      status: RoundStatus.values[data['status']],
       id: data['id'],
       tableId: data['tableId'],
+      winner: data['winner'] ?? '',
+      loser: data['loser'] != null
+          ? (data['loser'] as String).split(',')
+          : [''],
+      players: data['players'] != null
+          ? (data['players'] as String).split(',')
+          : [''],
+      method:
+          data['method'] == null ? Method.values[data['method']] : Method.Waiting,
+      ruleIndex: data['ruleIndex'] ?? 0,
+      winningAmount: data['winningAmount'] ?? 0,
+      losingAmount: data['losingAmount'] ?? 0,
+      roundStage: data['roundStage'] ?? 99,
+      status: RoundStatus.values[data['status']],
     );
   }
 
@@ -57,12 +55,9 @@ class Round extends Model {
         'players': players.join(','),
         'method': method.index,
         'ruleIndex': ruleIndex,
-        'winning': winningAmount,
-        'losing': losingAmount,
-        'round': windStage,
-        // 'isRoundSame': isRoundSame ? 1 : 0,
-        // 'isDealerChange': isDealerChange ? 1 : 0,
-        // 'isSwitchPlayer': isSwitchPlayer ? 1 : 0,
+        'winningAmount': winningAmount,
+        'losingAmount': losingAmount,
+        'roundStage': roundStage,
         'status': status.index,
       };
 
@@ -75,10 +70,7 @@ class Round extends Model {
     this.tableId,
     this.winningAmount,
     this.losingAmount,
-    this.windStage,
-    // this.isRoundSame,
-    // this.isDealerChange,
-    // this.isSwitchPlayer,
+    this.roundStage,
     this.status,
     id,
   }) : this.id = id ?? Uuid().v4();
@@ -90,20 +82,13 @@ class Round extends Model {
     this.ruleIndex,
     this.tableId,
     this.players,
-    tableRuleIndex,
-    tableRuleAmount,
-  ) : this.id = Uuid().v4() {
-    List<int> ruleset =
-        Globals().getRuleSet(tableRuleIndex ?? 0, tableRuleAmount ?? 0);
-    if (ruleset.isNotEmpty) {
-      this.winningAmount = winningAmount ??
-          (MethodUtil(this.method).winningRate * ruleset[ruleIndex]).toInt();
-      this.losingAmount = losingAmount ??
-          (MethodUtil(this.method).losingRate * ruleset[ruleIndex]).toInt();
-    }
-  }
+    this.roundStage,
+    this.winningAmount,
+    this.losingAmount,
+    this.status
+  ) : this.id = Uuid().v4();
 
-  Round.empty(String tableId, List<String> players)
+  Round.empty(String tableId, List<String> players, int roundStage, bool isLastRound)
       : id = Uuid().v4(),
         tableId = tableId,
         winner = "",
@@ -111,48 +96,31 @@ class Round extends Model {
         players = players,
         method = Method.Waiting,
         ruleIndex = 0,
-        status = RoundStatus.Empty;
+        roundStage = roundStage,
+        status = isLastRound ? RoundStatus.KeepDealer : RoundStatus.ChangeDealer,
+        winningAmount = 0,
+        losingAmount = 0;
 
-  Round.switchPlayer(String playerToLeave, String playerToAdd, this.tableId, this.players)
+  Round.switchPlayer(String playerToLeave, String playerToAdd, this.tableId, this.players, int roundStage)
       : winner = playerToAdd,
         loser = [playerToLeave],
         method = Method.Waiting,
         ruleIndex = 0,
         // isSwitchPlayer = true,
+        roundStage = roundStage,
+        status = RoundStatus.KeepDealer,
+        winningAmount = 0,
+        losingAmount = 0,
         id = Uuid().v4();
 
-  String get expression =>
+  String get ruleAndMethodStr =>
       ruleIndex >= 3 ? "$ruleIndex" + "番" + MethodUtil(method).toString() : "";
 
-  // String get caption => isSwitchPlayer
-  //     ? "換人"
-  //     : isRoundSame ? isDealerChange ? "冧莊" : "過莊" : windStage;
-
-  addWindStage(String s) => this.windStage = s;
-
-  // addStatus({bool roundSame, bool dealerChange}) {
-  //   status = roundSame
-  //       ? dealerChange ? RoundStatus.KeepDealer : RoundStatus.ChangeDealer
-  //       : RoundStatus.Normal;
-  // }
-  addStatus(RoundStatus status) => this.status = status;
-
-  // RoundStatus get status => isSwitchPlayer
-  //     ? RoundStatus.SwitchPlayer
-  //     : isRoundSame
-  //         ? isDealerChange ? RoundStatus.KeepDealer : RoundStatus.ChangeDealer
-  //         : RoundStatus.Normal;
-
-  String get caption => status == RoundStatus.Normal
-      ? windStage
-      : ['', '冧莊', '過莊', '換人'][status.index];
-
-  // bool get isRoundSame =>
-  //     status == RoundStatus.KeepDealer || status == RoundStatus.ChangeDealer;
-  // bool get isDealerChange => status == RoundStatus.Normal || status == RoundStatus.ChangeDealer;
   bool get isNewTable => status == RoundStatus.NewTable;
   bool get isSwitchPlayer => status == RoundStatus.SwitchPlayer;
-  bool get isNormal => status == RoundStatus.Normal;
+  //bool get isNormal => status == RoundStatus.Normal;
   bool get isKeepDealer => status == RoundStatus.KeepDealer;
   bool get isChangeDealer => status == RoundStatus.ChangeDealer;
+
+  String get roundCaption => ['流局','冧莊','過莊','換人','執位'][RoundStatus.values.indexOf(status)];
 }

@@ -1,11 +1,17 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:mahjong/models/player.dart';
+import 'package:mahjong/models/wind.dart';
 
 class Globals {
   static final _instance = Globals._internal();
   factory Globals() => _instance;
   Globals._internal();
+
+  GlobalKey<ScaffoldState> homeScaffoldKey = new GlobalKey<ScaffoldState>();
+  GlobalKey<ScaffoldState> historyScaffoldKey = new GlobalKey<ScaffoldState>();
+  GlobalKey<ScaffoldState> ruleScaffoldKey = new GlobalKey<ScaffoldState>();
 
   List<Player> lastPlayers = [];
 
@@ -30,6 +36,13 @@ class Globals {
 
   List<int> indexes = [8, 10, 13];
   List<int> amounts = [32, 64, 128, 256, 512];
+
+  Wind getWind(int stage) => Wind.values[stage ~/ 4];
+
+  int getWindStage(int stage) => stage % 4 + 1;
+
+  String getWindStageStr(int stage) =>
+      WindUtil(getWind(stage)).toString() + '${getWindStage(stage)}';
 }
 
 // class Rule {

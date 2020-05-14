@@ -11,7 +11,7 @@ class TableDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tableProvider = Provider.of<MjProvider>(scaffoldContext);
+    final tableProvider = Provider.of<MJProvider>(scaffoldContext);
     // if (tableProvider.table.id.isNotEmpty)
     return SizedBox(
       width: MediaQuery.of(context).size.width / 1.25,

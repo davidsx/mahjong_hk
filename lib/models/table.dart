@@ -1,7 +1,7 @@
 import 'package:mahjong/models/base.dart';
+import 'package:mahjong/models/globals.dart';
 import 'package:mahjong/models/player.dart';
 import 'package:mahjong/models/round.dart';
-import 'package:mahjong/models/wind.dart';
 import 'package:uuid/uuid.dart';
 
 class TableModel extends Model {
@@ -9,7 +9,8 @@ class TableModel extends Model {
   List<Player> players;
   int dealer;
   int starter;
-  Wind wind;
+  //Wind wind;
+  //int stage;
   int stage;
   List<Round> rounds;
   int ruleIndex, ruleAmount;
@@ -46,14 +47,15 @@ class TableModel extends Model {
 
   @override
   String toString() {
-    return 'Table { id: $id, players: $players, wind: $wind, stage: $stage }';
+    return 'Table { id: $id, players: $players, wind: ${Globals().getWind(stage)}, stage: ${Globals().getWindStage(stage)} }';
   }
 
   TableModel({
     this.players,
     this.dealer,
     this.starter,
-    this.wind,
+    //this.wind,
+    //this.stage,
     this.stage,
     this.rounds,
     this.gameEnd,
@@ -70,20 +72,17 @@ class TableModel extends Model {
         // 'rounds': rounds.map((r) => r.toArray()),
         'starter': starter,
         'dealer': dealer,
-        'wind': WindUtil(wind).toString(),
+        //'wind': WindUtil(wind).toString(),
         'stage': stage,
         'gameStart': gameStart ? 1 : 0,
         'gameEnd': gameEnd ? 1 : 0,
-        'lastUpdated': DateTime.now().toIso8601String(),
         'ruleIndex': ruleIndex,
         'ruleAmount': ruleAmount,
+        'lastUpdated': DateTime.now().toIso8601String(),
       };
 
   factory TableModel.fromMap(Map<String, dynamic> data) {
     TableModel tmp = TableModel.init();
-
-    // Globals().ruleIndex = data['ruleIndex'];
-    // Globals().ruleAmount = data['ruleAmount'];
 
     return TableModel(
       players: (data['players'] as String).split(';').map((p) {
@@ -93,7 +92,7 @@ class TableModel extends Model {
       }).toList(),
       starter: data['starter'] ?? tmp.starter,
       dealer: data['dealer'] ?? tmp.dealer,
-      wind: data['wind'] != null ? WindUtil.fromString(data['wind']) : tmp.wind,
+      //wind: data['wind'] != null ? WindUtil.fromString(data['wind']) : tmp.wind,
       stage: data['stage'] ?? tmp.stage,
       gameStart: Model.parseBool(data['gameStart']),
       gameEnd: Model.parseBool(data['gameEnd']),
@@ -108,8 +107,8 @@ class TableModel extends Model {
   }
 
   TableModel.init()
-      : this.wind = Wind.East,
-        this.stage = 1,
+      : //this.wind = Wind.East,
+        this.stage = 0,
         this.dealer = -1,
         this.starter = -1,
         this.players = [
@@ -126,17 +125,16 @@ class TableModel extends Model {
         this.ruleIndex = 0,
         this.ruleAmount = 0;
 
-  String get currentWindStage =>
-      WindUtil(this.wind).toString() + '${this.stage}';
+  // String get currentWindStageStr => Globals().getWindStageStr(stage);
 
-  bool get isLastGame => this.stage == 4 && this.wind == Wind.North;
+  // bool get isLastGame => this.stage == 4 && this.wind == Wind.North;
+  bool get isLastRound => this.stage == 15;
 
   bool get isGameReady =>
       starter > 0 && dealer > 0 && players.every((p) => p.active);
 
-  bool get isRoundSame => this.rounds.isNotEmpty
-      ? this.rounds.last.windStage == this.currentWindStage
-      : false;
+  bool get isRoundSame =>
+      this.rounds.isNotEmpty && this.rounds.last.roundStage == this.stage;
 
   bool get isPlayerSwitched =>
       this.rounds.isNotEmpty ? this.rounds.any((r) => r.isSwitchPlayer) : false;
@@ -144,6 +142,16 @@ class TableModel extends Model {
   bool get isPlayerReady => this.players.where((p) => p.active).length >= 4;
 
   List<String> get playerNames => players.map((p) => p.name).toList();
+
+  // Wind get currentWind => Globals().getWind(stage);
+
+  // int get currentWindStage => Globals().getWindStage(stage);
+
+  List<int> get ruleset => Globals().getRuleSet(ruleIndex, ruleAmount);
+
+  Round get lastRound => this.rounds.isNotEmpty ? this.rounds.last : null;
+
+  Round get emptyRound => Round.empty(id, playerNames, stage, isLastRound);
 
   void setRule(int ruleIndex, int ruleAmount) {
     this.ruleIndex = ruleIndex;
@@ -158,13 +166,18 @@ class TableModel extends Model {
         List<Player>.generate(4, (i) => this.players[i == 0 ? 3 : i - 1]);
     this.starter += 1;
     if (this.starter >= 4) this.starter = 0;
-    this.dealer +=1;
+    this.dealer += 1;
     if (this.dealer >= 4) this.dealer = 0;
   }
 
   void setStarter(String starterName) {
     dealer = this.players.indexWhere((p) => p.name == starterName);
     starter = this.players.indexWhere((p) => p.name == starterName);
+  }
+
+  void resetStarter() {
+    dealer = -1;
+    starter = -1;
   }
 
   void startGame() {
@@ -175,49 +188,39 @@ class TableModel extends Model {
   void endGame() => this.gameEnd = true;
 
   void newRound(Round round) {
-    bool dealerChange =
-        this.dealer != this.players.indexWhere((p) => p.name == round.winner);
-    Round lastRound = this.rounds.isNotEmpty ? this.rounds.last : null;
-    RoundStatus status = lastRound == null ||
-            lastRound.isChangeDealer ||
-            lastRound.isSwitchPlayer
-        ? RoundStatus.Normal
-        : dealerChange
-            ? lastRound.isKeepDealer
-                ? RoundStatus.ChangeDealer
-                : RoundStatus.Normal
-            : RoundStatus.KeepDealer;
-
     this.players.forEach((p) => p.balanceChange(p.name == round.winner
         ? round.winningAmount
         : round.loser.contains(p.name) ? round.losingAmount : 0));
-    if (dealerChange && !isLastGame) {
-      wind = this.stage == 4 ? Wind.values[this.wind.index + 1] : this.wind;
-      stage = this.stage == 4 ? 1 : this.stage + 1;
-      dealer = (this.dealer + 1) >= 4 ? 0 : this.dealer + 1;
+    if (round.isChangeDealer) {
+      this.stage += 1;
+      this.dealer = (this.dealer + 1) >= 4 ? 0 : this.dealer + 1;
     }
-    this.rounds.add(round
-      ..addWindStage(this.currentWindStage)
-      ..addStatus(status));
-    this.gameEnd = dealerChange && isLastGame;
+    this.rounds.add(round);
+    //this.gameEnd = !isLastRound;
+  }
+
+  void newEmptyRound() {
+    this.rounds.add(emptyRound);
+    if (emptyRound.isChangeDealer) {
+      this.stage = isLastRound ? this.stage : this.stage + 1;
+      this.dealer = (this.dealer + 1) >= 4 ? 0 : this.dealer + 1;
+    }
+    //this.gameEnd = !isLastRound;
   }
 
   void switchPlayer(String playerToLeave, String playerToAdd) {
     this.players.firstWhere((p) => p.name == playerToLeave).name = playerToAdd;
     if (rounds.isNotEmpty) {
-      Round round =
-          Round.switchPlayer(playerToLeave, playerToAdd, id, playerNames);
-      this.rounds.add(round
-        ..addWindStage(this.currentWindStage)
-        ..addStatus(RoundStatus.SwitchPlayer));
+      Round round = Round.switchPlayer(
+          playerToLeave, playerToAdd, id, playerNames, stage);
+      this.rounds.add(round);
     }
   }
 
   void restart() {
     players.forEach((p) => p.balanceEmpty());
     dealer = this.starter;
-    wind = Wind.East;
-    stage = 1;
+    stage = 0;
     rounds = List<Round>();
     gameEnd = false;
   }
@@ -229,13 +232,7 @@ class TableModel extends Model {
             ? -this.rounds.last.losingAmount
             : 0));
     if (!this.isRoundSame) {
-      this.stage = this.stage == 1 ? 4 : this.stage - 1;
-      this.wind = this.stage == 1
-          ? this.wind == Wind.East
-              ? Wind.East
-              : Wind.values[this.wind.index - 1]
-          : this.wind;
-    } else {
+      this.stage -= 1;
       this.dealer = this.dealer == 0 ? 3 : this.dealer - 1;
     }
     rounds.removeLast();
@@ -257,8 +254,8 @@ class TableModel extends Model {
       Player.init(),
       Player.init(),
     ];
-    this.wind = Wind.East;
-    this.stage = 1;
+    //this.wind = Wind.East;
+    this.stage = 0;
     this.dealer = -1;
     this.starter = -1;
   }

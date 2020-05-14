@@ -1,10 +1,10 @@
-import 'package:clay_containers/widgets/clay_containers.dart';
 import 'package:flutter/material.dart';
 import 'package:mahjong/extensions/TransparentInkWell.dart';
+import 'package:mahjong/extensions/TableAppBar.dart';
 import 'package:mahjong/models/globals.dart';
 import 'package:mahjong/provider/mj_provider.dart';
 import 'package:mahjong/resources/color.dart';
-import 'package:mahjong/view/tableAppBar.dart';
+import 'package:mahjong/resources/responsive.dart';
 import 'package:mahjong/view/tableDrawer.dart';
 import 'package:provider/provider.dart';
 
@@ -12,9 +12,9 @@ class RuleScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xfff0f0f0),
+      key: Globals().ruleScaffoldKey,
       //resizeToAvoidBottomInset: false,
-      appBar: TableAppBar(),
+      appBar: TableAppBar(context, Globals().ruleScaffoldKey),
       body: SafeArea(
         bottom: false,
         child: Container(
@@ -70,7 +70,9 @@ class _TableRuleState extends State<TableRule> {
 
   @override
   Widget build(BuildContext context) {
-    final tableProvider = Provider.of<MjProvider>(context);
+    final tableProvider = Provider.of<MJProvider>(context);
+    final theme = ResponsiveTheme(MediaQuery.of(context).size);
+
     return GestureDetector(
       onTap: () {
         FocusScopeNode currentFocus = FocusScope.of(context);
@@ -83,7 +85,7 @@ class _TableRuleState extends State<TableRule> {
         children: <Widget>[
           Container(
             margin: const EdgeInsets.only(bottom: 10.0),
-            height: 40,
+            height: theme.ruleBox,
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
@@ -126,7 +128,7 @@ class _TableRuleState extends State<TableRule> {
                           },
                           child: Center(
                             child: Text("${indexes[i]}番",
-                                style: TextStyle(fontSize: 15)),
+                                style: TextStyle(fontSize: theme.body1)),
                           ),
                         ),
                       ),
@@ -136,7 +138,7 @@ class _TableRuleState extends State<TableRule> {
             ),
           ),
           Container(
-            height: 40,
+            height: theme.ruleBox,
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
@@ -177,7 +179,7 @@ class _TableRuleState extends State<TableRule> {
                           },
                           child: Center(
                             child: Text("${Globals().amounts[i]}",
-                                style: TextStyle(fontSize: 15)),
+                                style: TextStyle(fontSize: theme.body1)),
                           ),
                         ),
                       ),
@@ -201,7 +203,7 @@ class _TableRuleState extends State<TableRule> {
                             child: Text(
                               "$i番 :",
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 18),
+                              style: TextStyle(fontSize: theme.subtitle2),
                             ),
                           ),
                           Expanded(
@@ -218,7 +220,7 @@ class _TableRuleState extends State<TableRule> {
                                 child: Text(
                                   "${ruleset[i]}",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 14),
+                                  style: TextStyle(fontSize: theme.body2),
                                 ),
                               ),
                             ),
@@ -230,50 +232,6 @@ class _TableRuleState extends State<TableRule> {
               ],
             ),
           ),
-          // Expanded(
-          //   child: Padding(
-          //     padding: const EdgeInsets.all(10.0),
-          //     child: GridView.count(
-          //       crossAxisCount: 2,
-          //       childAspectRatio: 5.5,
-          //       children: <Widget>[
-          //         for (int i = 3; i < ruleset.length; i++)
-          //           Padding(
-          //             padding: const EdgeInsets.only(bottom: 6.0),
-          //             child: Row(
-          //               children: <Widget>[
-          //                 Expanded(
-          //                   child: Text(
-          //                     "$i番 :",
-          //                     textAlign: TextAlign.center,
-          //                     style: TextStyle(fontSize: 18),
-          //                   ),
-          //                 ),
-          //                 Expanded(
-          //                   child: Container(
-          //                     height: 30,
-          //                     margin: EdgeInsets.symmetric(horizontal: 15.0),
-          //                     decoration: BoxDecoration(
-          //                       // color: white,
-          //                       border: Border.all(color: black.withOpacity(0.3)),
-          //                       borderRadius: BorderRadius.circular(5),
-          //                     ),
-          //                     child: Center(
-          //                       child: Text(
-          //                         "${ruleset[i]}",
-          //                         textAlign: TextAlign.center,
-          //                         style: TextStyle(fontSize: 14),
-          //                       ),
-          //                     ),
-          //                   ),
-          //                 )
-          //               ],
-          //             ),
-          //           ),
-          //       ],
-          //     ),
-          //   ),
-          // ),
           Divider(),
           Column(
             children: <Widget>[
@@ -281,7 +239,7 @@ class _TableRuleState extends State<TableRule> {
                 child: Text(
                   "邊個落場",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(fontSize: theme.subtitle1),
                 ),
               ),
               for (int i = 0; i < 2; i++)

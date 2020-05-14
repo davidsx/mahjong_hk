@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:mahjong/extensions/TransparentInkWell.dart';
+import 'package:mahjong/extensions/TableAppBar.dart';
+import 'package:mahjong/models/globals.dart';
 import 'package:mahjong/models/table.dart';
 import 'package:mahjong/provider/mj_provider.dart';
 import 'package:mahjong/resources/color.dart';
-import 'package:mahjong/view/tableAppBar.dart';
+import 'package:mahjong/resources/responsive.dart';
 import 'package:mahjong/view/tableDrawer.dart';
 import 'package:provider/provider.dart';
 
 class HistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final tableProvider = Provider.of<MjProvider>(context, listen: false);
+    final tableProvider = Provider.of<MJProvider>(context, listen: false);
     // final mjProvider = Provider.of<MjProvider>(context, listen: false);
     return Scaffold(
-      // key: Globals().historyKey,
+      key: Globals().historyScaffoldKey,
+      appBar: TableAppBar(context, Globals().historyScaffoldKey),
       body: SafeArea(
         bottom: false,
         child: Container(
@@ -22,7 +25,6 @@ class HistoryScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              TableAppBar(),
               Expanded(child: TableHistory()),
               Divider(),
               Padding(
@@ -53,18 +55,18 @@ class HistoryScreen extends StatelessWidget {
 class TableHistory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<MjProvider>(builder: (context, value, child) {
-      if (value.tableHistory.isEmpty) {
-        return Center(
-          child: Text('無記錄', style: TextStyle(fontSize: 20.0, color: grey)),
-        );
-      }
-      return ListView(
-        children: <Widget>[
-          for (var t in value.tableHistory) TableHistoryItem(t),
-        ],
+    final tableProvider = Provider.of<MJProvider>(context);
+
+    if (tableProvider.tableHistory.isEmpty) {
+      return Center(
+        child: Text('無記錄', style: TextStyle(fontSize: 20.0, color: grey)),
       );
-    });
+    }
+    return ListView(
+      children: <Widget>[
+        for (var t in tableProvider.tableHistory) TableHistoryItem(t),
+      ],
+    );
   }
 }
 
@@ -74,7 +76,9 @@ class TableHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mjProvider = Provider.of<MjProvider>(context, listen: false);
+    final mjProvider = Provider.of<MJProvider>(context, listen: false);
+    final theme = ResponsiveTheme(MediaQuery.of(context).size);
+    
     return Padding(
       padding: EdgeInsets.only(bottom: 20, left: 10, right: 10),
       child: TransparentInkWell(
@@ -110,7 +114,7 @@ class TableHistoryItem extends StatelessWidget {
             ),
           ),
           child: SizedBox(
-            height: 65,
+            height: theme.historyBox,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,10 +129,10 @@ class TableHistoryItem extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: <Widget>[
-                              Text(p.name, style: TextStyle(fontSize: 25.0)),
+                              Text(p.name, style: TextStyle(fontSize: theme.subtitle1)),
                               Text(p.balance.toString(),
                                   style: TextStyle(
-                                    fontSize: 24.0,
+                                    fontSize: theme.subtitle2,
                                     color: p.balance == 0
                                         ? grey
                                         : p.balance > 0
@@ -145,13 +149,13 @@ class TableHistoryItem extends StatelessWidget {
                           children: <Widget>[
                             Text(
                               "${table.lastUpdated.month}/${table.lastUpdated.day}/${table.lastUpdated.year}",
-                              style: TextStyle(fontSize: 14.0, color: grey),
+                              style: TextStyle(fontSize: theme.overline, color: grey),
                             ),
                             if (table.gameEnd)
                               Text(
                                 "完結",
                                 style: TextStyle(
-                                    fontSize: 18.0,
+                                    fontSize: theme.body2,
                                     color: black.withOpacity(0.6)),
                               )
                             else
@@ -162,10 +166,11 @@ class TableHistoryItem extends StatelessWidget {
                                   children: <Widget>[
                                     Text(
                                       (table.rounds ?? []).isNotEmpty
-                                          ? table.currentWindStage
+                                          ? Globals()
+                                              .getWindStageStr(table.stage)
                                           : "東1",
                                       style: TextStyle(
-                                          fontSize: 18.0,
+                                          fontSize: theme.caption,
                                           color: black.withOpacity(0.6)),
                                     ),
                                     Icon(Icons.arrow_forward_ios, size: 18),

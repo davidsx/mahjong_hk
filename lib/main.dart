@@ -73,9 +73,8 @@ class BlocWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<MjProvider>(create: (_) => MjProvider()),
         // ChangeNotifierProvider<PlayerProvider>(create: (_) => PlayerProvider()),
-        ChangeNotifierProvider<MjProvider>(create: (context) => MjProvider())
+        ChangeNotifierProvider<MJProvider>(create: (context) => MJProvider())
       ],
       child: child,
     );

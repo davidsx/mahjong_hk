@@ -27,7 +27,7 @@ enum TableState {
   RearrageSeat
 }
 
-class MjProvider extends ChangeNotifier {
+class MJProvider extends ChangeNotifier {
   final DatabaseService service = DatabaseService.dbService;
   final String tableRoute = 'MJtable';
   final String roundRoute = 'MJround';
@@ -50,11 +50,12 @@ class MjProvider extends ChangeNotifier {
   // * Basic
   TableModel table = TableModel.init();
   TableState state = TableState.SettingTable;
+  String errMsg = "";
 
   // * Round
   String tmpWinner = "";
   List<String> tmpLoser = const [];
-  int tmpRule = 0;
+  int tmpRuleIndex = 0;
   Method tmpMethod = Method.Waiting;
 
   // * SwitchPlayer
@@ -81,24 +82,53 @@ class MjProvider extends ChangeNotifier {
       state == TableState.SwitchingPlayerAdd ||
       state == TableState.SwitchingPlayerConfirm;
 
-  Round get round => Round.newRound(tmpWinner, tmpLoser, tmpMethod, tmpRule,
-      table.id, table.playerNames, table.ruleIndex, table.ruleAmount);
+  bool get dealerChange =>
+      table.dealer != table.players.indexWhere((p) => p.name == tmpWinner);
 
-  String get method => tmpMethod == Method.SimpleWin
+  RoundStatus get tmpRoundStatus =>
+      dealerChange ? RoundStatus.ChangeDealer : RoundStatus.KeepDealer;
+
+  // String get tmpRoundCaption => table.lastRound == null ||
+  //         table.lastRound.isChangeDealer ||
+  //         table.lastRound.isSwitchPlayer
+  //     ? table.currentWindStageStr
+  //     : dealerChange
+  //         ? table.lastRound.isKeepDealer ? '過莊' : table.currentWindStageStr
+  //         : '冧莊';
+
+  Round get round => Round.newRound(
+      tmpWinner,
+      tmpLoser,
+      tmpMethod,
+      tmpRuleIndex,
+      table.id,
+      table.playerNames,
+      table.stage,
+      winningAmount,
+      losingAmount,
+      tmpRoundStatus);
+
+  int get winningAmount =>
+      (MethodUtil(tmpMethod).winningRate * table.ruleset[tmpRuleIndex]).toInt();
+
+  int get losingAmount =>
+      (MethodUtil(tmpMethod).losingRate * table.ruleset[tmpRuleIndex]).toInt();
+
+  String get methodStr => tmpMethod == Method.SimpleWin
       ? "出銃"
       : tmpMethod == Method.SelfDraw
           ? "自摸"
           : tmpMethod == Method.SelfDrawByOne ? "包自摸" : "";
 
-  String get rule => tmpRule >= 3 ? tmpRule.toString() + "番" : "";
+  String get ruleStr => tmpRuleIndex >= 3 ? tmpRuleIndex.toString() + "番" : "";
 
-  String get winner => tmpWinner;
-  List<String> get loser => tmpLoser;
+  String get winnerStr => tmpWinner;
+  List<String> get loserStr => tmpLoser;
 
   _clearRound() {
     tmpWinner = "";
     tmpLoser = const [];
-    tmpRule = 0;
+    tmpRuleIndex = 0;
     tmpMethod = Method.Waiting;
   }
 
@@ -117,6 +147,12 @@ class MjProvider extends ChangeNotifier {
   setStarter(String starter) {
     table.setStarter(starter);
     state = TableState.SettingReady;
+    notifyListeners();
+  }
+
+  resetStarter() {
+    table.resetStarter();
+    state = TableState.SettingStarter;
     notifyListeners();
   }
 
@@ -151,13 +187,13 @@ class MjProvider extends ChangeNotifier {
   }
 
   ruleSetFound(int ruleIndex) {
-    tmpRule = ruleIndex;
+    tmpRuleIndex = ruleIndex;
     state = TableState.WaitingConfirm;
     notifyListeners();
   }
 
   emptyRound() {
-    table.newRound(Round.empty(table.id, table.playerNames));
+    table.newEmptyRound();
     notifyListeners();
     // db.newRound(table);
     service.update(tableRoute, table);
@@ -181,6 +217,7 @@ class MjProvider extends ChangeNotifier {
   }
 
   switchPlayer() {
+    errMsg = "";
     state = TableState.SwitchingPlayerLeave;
     notifyListeners();
   }
@@ -191,18 +228,36 @@ class MjProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  undoPlayerLeave() {
+    tmpPlayerToLeave = "";
+    state = TableState.SwitchingPlayerLeave;
+    notifyListeners();
+  }
+
   playerAddFound(String playerToAdd) {
-    if (table.playerNames.contains(playerToAdd))
-      cancelSwitchPlayer();
-    else {
+    print(table.playerNames);
+    if (table.playerNames.contains(playerToAdd)) {
+      errMsg = "個名已經用咗啦！";
+      tmpPlayerToLeave = "";
+      state = TableState.SwitchingPlayerLeave;
+      notifyListeners();
+    } else {
       tmpPlayerToAdd = playerToAdd;
       state = TableState.SwitchingPlayerConfirm;
       notifyListeners();
     }
   }
 
+  undoPlayerAdd() {
+    tmpPlayerToAdd = "";
+    state = TableState.SwitchingPlayerAdd;
+    notifyListeners();
+  }
+
   confirmSwitchPlayer() {
     table.switchPlayer(tmpPlayerToLeave, tmpPlayerToAdd);
+    tmpPlayerToLeave = "";
+    tmpPlayerToAdd = "";
     state = TableState.WaitingWinner;
     notifyListeners();
     service.update(tableRoute, table);

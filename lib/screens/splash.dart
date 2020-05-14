@@ -22,7 +22,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // DatabaseService.dbService.init().then((_) {
     SharedPreferences.getInstance().then((prefs) {
       final String tableID = prefs.getString('tableID') ?? "";
-      final tableProvider = Provider.of<MjProvider>(context, listen: false);
+      final tableProvider = Provider.of<MJProvider>(context, listen: false);
       if (tableID.isNotEmpty) {
         tableProvider.initTableID(tableID);
         tableProvider.continueTable(tableID);

@@ -24,10 +24,8 @@ class PlayerListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tableProvider = Provider.of<MjProvider>(context, listen: false);
+    final tableProvider = Provider.of<MJProvider>(context, listen: false);
     final bool active = tableProvider.table.playerNames.contains(player.name);
-    final int index =
-        tableProvider.table.players.indexWhere((p) => p.name == player.name);
     // print(active);
     return Container(
       decoration: BoxDecoration(
