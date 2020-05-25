@@ -10,24 +10,24 @@ class TableDetail extends StatelessWidget {
     final double fontSize =
         ResponsiveTheme(MediaQuery.of(context).size).subtitle1;
     final tableProvider = Provider.of<MJProvider>(context);
-    if (tableProvider.isWaiting)
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.max,
-        children: <Widget>[
-          Expanded(
-            flex: 2,
-            child: Stack(
-              children: <Widget>[
-                Align(
-                    alignment: tableProvider.tmpWinner.isEmpty
-                        ? Alignment.center
-                        : Alignment.centerLeft,
-                    child: Text("贏家",
-                        style: TextStyle(
-                          color: tableProvider.tmpWinner.isEmpty ? grey : black,
-                        ))),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
+      children: <Widget>[
+        Expanded(
+          flex: 2,
+          child: Stack(
+            children: <Widget>[
+              Align(
+                  alignment: tableProvider.tmpWinner.isEmpty
+                      ? Alignment.center
+                      : Alignment.centerLeft,
+                  child: Text("贏家",
+                      style: TextStyle(
+                        color: tableProvider.tmpWinner.isEmpty ? grey : black,
+                      ))),
+              if (tableProvider.tmpWinner.isNotEmpty)
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -46,58 +46,67 @@ class TableDetail extends StatelessWidget {
                     ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-          Divider(thickness: 2.0),
-          Expanded(
-            flex: 2,
-            child: Stack(
-              children: <Widget>[
-                Align(
-                    alignment: tableProvider.loserStr.isEmpty
-                        ? Alignment.center
-                        : Alignment.centerLeft,
-                    child: Text("輸家",
-                        style: TextStyle(
-                          color: tableProvider.winnerStr.isEmpty ? grey : black,
-                        ))),
+        ),
+        Divider(thickness: 2.0),
+        Expanded(
+          flex: 2,
+          child: Stack(
+            children: <Widget>[
+              Align(
+                  alignment: tableProvider.loserStr.isEmpty
+                      ? Alignment.center
+                      : Alignment.centerLeft,
+                  child: Text("輸家",
+                      style: TextStyle(
+                        color: tableProvider.winnerStr.isEmpty ? grey : black,
+                      ))),
+              if (tableProvider.loserStr.isNotEmpty)
                 Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      for (String t
-                          in tableProvider.loserStr.join(" ").trim().split(""))
-                        SizedBox(
-                            width: fontSize,
-                            child: Center(
-                              child: Text(
-                                t.trim(),
-                                textAlign: TextAlign.center,
-                                style:
-                                    TextStyle(fontSize: fontSize, color: red),
-                              ),
-                            ))
-                    ],
+                  child: FittedBox(
+                    child: Column(
+                      children: <Widget>[
+                        for (String loser in tableProvider.loserStr)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              for (String t in loser.trim().split(""))
+                                SizedBox(
+                                    width: fontSize,
+                                    child: Center(
+                                      child: Text(
+                                        t.trim(),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            fontSize: fontSize, color: red),
+                                      ),
+                                    ))
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-          Divider(thickness: 2.0),
-          Expanded(
-            flex: 2,
-            child: Stack(
-              children: <Widget>[
-                Align(
-                    alignment: tableProvider.ruleStr.isEmpty &&
-                            tableProvider.methodStr.isEmpty
-                        ? Alignment.center
-                        : Alignment.centerLeft,
-                    child: Text("番數",
-                        style: TextStyle(
-                          color: tableProvider.winnerStr.isEmpty ? grey : black,
-                        ))),
+        ),
+        Divider(thickness: 2.0),
+        Expanded(
+          flex: 2,
+          child: Stack(
+            children: <Widget>[
+              Align(
+                  alignment: tableProvider.ruleStr.isEmpty &&
+                          tableProvider.methodStr.isEmpty
+                      ? Alignment.center
+                      : Alignment.centerLeft,
+                  child: Text("番數",
+                      style: TextStyle(
+                        color: tableProvider.winnerStr.isEmpty ? grey : black,
+                      ))),
+              if (tableProvider.ruleStr.isNotEmpty ||
+                  tableProvider.methodStr.isNotEmpty)
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -117,13 +126,11 @@ class TableDetail extends StatelessWidget {
                     ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-          Divider(thickness: 2.0),
-        ],
-      );
-    else
-      return Container();
+        ),
+        Divider(thickness: 2.0),
+      ],
+    );
   }
 }

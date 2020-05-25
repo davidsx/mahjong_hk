@@ -141,6 +141,8 @@ class TableModel extends Model {
 
   bool get isPlayerReady => this.players.where((p) => p.active).length >= 4;
 
+  bool get isPlayerEmpty => this.players.where((p) => !p.active).length >= 4;
+
   List<String> get playerNames => players.map((p) => p.name).toList();
 
   // Wind get currentWind => Globals().getWind(stage);
@@ -187,6 +189,14 @@ class TableModel extends Model {
 
   void endGame() => this.gameEnd = true;
 
+  void continueGame() {
+    this.starter = -1;
+    this.dealer = -1;
+    this.stage = 0;
+    this.gameStart = false;
+    this.gameEnd = false;
+  }
+
   void newRound(Round round) {
     this.players.forEach((p) => p.balanceChange(p.name == round.winner
         ? round.winningAmount
@@ -196,7 +206,7 @@ class TableModel extends Model {
       this.dealer = (this.dealer + 1) >= 4 ? 0 : this.dealer + 1;
     }
     this.rounds.add(round);
-    //this.gameEnd = !isLastRound;
+    this.gameEnd = this.stage > 15;
   }
 
   void newEmptyRound() {
@@ -268,5 +278,9 @@ class TableModel extends Model {
               .firstWhere((p) => p.name == player.name)
               .setPlayer(Player.init());
     }
+  }
+
+  void emptyTable() {
+    players = List<Player>.generate(4, (index) => Player.init());
   }
 }

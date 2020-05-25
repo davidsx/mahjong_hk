@@ -4,13 +4,15 @@ import 'package:mahjong/models/player.dart';
 import 'package:mahjong/provider/mj_provider.dart';
 import 'package:mahjong/resources/color.dart';
 import 'package:mahjong/resources/responsive.dart';
+import 'package:mahjong/view/alertBox.dart';
 import 'package:mahjong/view/questionBox.dart';
 import 'package:mahjong/view/skeleton.dart';
 import 'package:provider/provider.dart';
 
 class TablePlayerBox extends StatefulWidget {
-  TablePlayerBox(this.playerIndex);
+  TablePlayerBox(this.playerIndex, this.controller);
   final int playerIndex;
+  final AnimationController controller;
 
   @override
   _TablePlayerBoxState createState() => _TablePlayerBoxState();
@@ -36,129 +38,157 @@ class _TablePlayerBoxState extends State<TablePlayerBox> {
       widthFactor: 1 / 3,
       child: AspectRatio(
         aspectRatio: 1,
-        child: TransparentInkWell(
-          onLongPress: () {
-            if (state == TableState.WaitingWinner) {
-              tableProvider.winnerFound(player.name, true);
-              showRuleset();
-            } else if (state == TableState.WaitingLoser && !isWinner) {
-              tableProvider.loserFound(player.name, true);
-              showRuleset();
-            }
-          },
-          onTap: () {
-            if (state == TableState.SettingStarter) {
-              tableProvider.setStarter(player.name);
-            } else if (state == TableState.WaitingWinner) {
-              tableProvider.winnerFound(player.name);
-            } else if (state == TableState.WaitingLoser) {
-              isWinner
-                  ? tableProvider.winnerFound(player.name, true)
-                  : tableProvider.loserFound(player.name);
-              showRuleset();
-            } else if (state == TableState.SwitchingPlayerLeave) {
-              tableProvider.playerLeaveFound(player.name);
-              showSwitchPlayer();
-            }
-          },
-          onDoubleTap: () {
-            if (state == TableState.WaitingWinner) {
-              tableProvider.winnerFound(player.name, true);
-              showRuleset();
-            } else if (state == TableState.WaitingLoser) {
-              isWinner
-                  ? tableProvider.winnerFound(player.name, true)
-                  : tableProvider.loserFound(player.name);
-              showRuleset();
-            }
-          },
-          child: Material(
-            color: transparent,
-            shadowColor: transparent,
-            elevation: 10,
-            child: Container(
-              margin: EdgeInsets.all(5.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(
-                  color: tableProvider.isSwitching
-                      ? isLeaving ? blue : blue.withOpacity(0.3)
-                      : isWinner ? green : isLoser ? red : transparent,
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: black.withOpacity(0.1),
-                    blurRadius: isWinner || isLoser ? 15 : 10,
-                  ),
-                ],
+        child: Material(
+          color: transparent,
+          shadowColor: transparent,
+          elevation: 10,
+          child: Container(
+            margin: EdgeInsets.all(5.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: tableProvider.isSwitching
+                    ? isLeaving ? blue : blue.withOpacity(0.3)
+                    : isWinner ? green : isLoser ? red : transparent,
+                width: 2,
               ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: black.withOpacity(0.1),
+                  blurRadius: isWinner || isLoser ? 15 : 10,
+                ),
+              ],
+            ),
+            child: TransparentInkWell(
+              onLongPress: () {
+                if (state == TableState.WaitingWinner) {
+                  tableProvider.winnerFound(player.name, true);
+                  showRuleset();
+                } else if (state == TableState.WaitingLoser && !isWinner) {
+                  tableProvider.loserFound(player.name, true);
+                  showRuleset();
+                }
+              },
+              onTap: () {
+                if (state == TableState.SettingStarter) {
+                  tableProvider.setStarter(player.name);
+                } else if (state == TableState.WaitingWinner) {
+                  tableProvider.winnerFound(player.name);
+                } else if (state == TableState.WaitingLoser) {
+                  isWinner
+                      ? tableProvider.winnerFound(player.name, true)
+                      : tableProvider.loserFound(player.name);
+                  showRuleset();
+                } else if (state == TableState.SwitchingPlayerLeave) {
+                  tableProvider.playerLeaveFound(player.name);
+                  showSwitchPlayer();
+                } else if (state == TableState.HandlingEvent) {
+                  switch (widget.playerIndex) {
+                    case 0:
+                      newGame();
+                      break;
+                    case 1:
+                      reviseLastRound();
+                      break;
+                    case 2:
+                      restartGame();
+                      break;
+                    case 3:
+                      tableProvider.switchPlayer();
+                      widget.controller.reverse();
+                      break;
+                  }
+                }
+              },
+              onDoubleTap: () {
+                if (state == TableState.WaitingWinner) {
+                  tableProvider.winnerFound(player.name, true);
+                  showRuleset();
+                } else if (state == TableState.WaitingLoser) {
+                  isWinner
+                      ? tableProvider.winnerFound(player.name, true)
+                      : tableProvider.loserFound(player.name);
+                  showRuleset();
+                }
+              },
               child: Stack(
                 children: <Widget>[
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        tableProvider.isLoading
-                            ? Skeleton(height: 30, width: 60)
-                            : Text(
-                                player.name,
-                                style: TextStyle(
-                                  fontSize: theme.headline2,
+                  if (tableProvider.isLoading)
+                    Skeleton(
+                      height: double.infinity,
+                      width: double.infinity,
+                      borderRadius: 20.0,
+                    )
+                  else if (tableProvider.isHandlingEvent)
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Icon(
+                            [
+                              Icons.add,
+                              Icons.reply,
+                              Icons.replay,
+                              Icons.swap_vert
+                            ][widget.playerIndex],
+                            color: greenLight,
+                            size: theme.headline1,
+                          ),
+                          Text(
+                            ["開新牌局", "刪除上局", "重新開始", "換人"][widget.playerIndex],
+                            style: TextStyle(
+                              fontSize: theme.overline,
+                              color: greenLight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (tableProvider.isWaiting ||
+                      tableProvider.isSetting ||
+                      tableProvider.isSwitching ||
+                      tableProvider.isGameEnd)
+                    Center(
+                      child: Stack(
+                        // mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Align(
+                            alignment: Alignment(0, -0.15),
+                            child: FractionallySizedBox(
+                              widthFactor: 0.9,
+                              heightFactor: 0.3,
+                              child: FittedBox(
+                                child: Text(
+                                  player.name,
+                                  style: TextStyle(
+                                    fontSize: theme.headline2,
+                                  ),
                                 ),
                               ),
-                        tableProvider.isLoading
-                            ? Skeleton(height: 30, width: 90)
-                            : Text(
-                                "${player.balance}",
-                                style: TextStyle(
-                                  fontSize: theme.subtitle1,
-                                  color: !player.active
-                                      ? white
-                                      : player.balance == 0
-                                          ? grey
-                                          : player.balance > 0
-                                              ? greenDark
-                                              : player.balance < 0
-                                                  ? redDark
-                                                  : black,
-                                ),
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment(0, 0.5),
+                            child: Text(
+                              "${player.balance}",
+                              style: TextStyle(
+                                fontSize: theme.subtitle1,
+                                color: !player.active
+                                    ? white
+                                    : player.balance == 0
+                                        ? grey
+                                        : player.balance > 0
+                                            ? greenDark
+                                            : player.balance < 0
+                                                ? redDark
+                                                : black,
                               ),
-                      ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  // Align(
-                  //   alignment: Alignment(0.0, -0.35),
-                  //   child: tableProvider.isLoading
-                  //       ? Skeleton(height: 30, width: 60)
-                  //       : Text(
-                  //           player.name,
-                  //           style: TextStyle(
-                  //             fontSize: theme.headline2,
-                  //           ),
-                  //         ),
-                  // ),
-                  // Align(
-                  //   alignment: Alignment(0.0, 0.65),
-                  //   child: tableProvider.isLoading
-                  //       ? Skeleton(height: 30, width: 90)
-                  //       : Text(
-                  //           "${player.balance}",
-                  //           style: TextStyle(
-                  //             fontSize: theme.subtitle,
-                  //             color: !player.active
-                  //                 ? white
-                  //                 : player.balance == 0
-                  //                     ? grey
-                  //                     : player.balance > 0
-                  //                         ? greenDark
-                  //                         : player.balance < 0
-                  //                             ? redDark
-                  //                             : black,
-                  //           ),
-                  //         ),
-                  // ),
                   if (state == TableState.SettingStarter &&
                       tableProvider.table.dealer < 0)
                     Align(
@@ -344,5 +374,73 @@ class _TablePlayerBoxState extends State<TablePlayerBox> {
         );
       },
     );
+  }
+
+  reviseLastRound() {
+    final tableProvider = Provider.of<MJProvider>(context, listen: false);
+    bool lastRoundSwitched = tableProvider.table.rounds.last.isSwitchPlayer;
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertBox(
+          title: lastRoundSwitched ? "取消換人？" : "刪除上局？",
+          yes: '係呀',
+          no: '唔係',
+          action: () {
+            lastRoundSwitched
+                ? tableProvider.reviseLastSwitch()
+                : tableProvider.reviseLastRound();
+            Navigator.pop(dialogContext);
+            widget.controller.reverse();
+          },
+        );
+      },
+    );
+  }
+
+  restartGame() {
+    final tableProvider = Provider.of<MJProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertBox(
+          title: "重新開始？",
+          subtitle: tableProvider.table.isPlayerSwitched ? "(以換人後的玩家重開新局)" : "",
+          yes: '係呀',
+          no: '唔係',
+          action: () {
+            tableProvider.restartTable();
+            Navigator.pop(dialogContext);
+            widget.controller.reverse();
+          },
+        );
+      },
+    );
+  }
+
+  newGame() {
+    final tableProvider = Provider.of<MJProvider>(context, listen: false);
+    if (tableProvider.isLoading) {
+      tableProvider.newTable();
+      Navigator.of(context).pushReplacementNamed('/rule');
+    } else {
+      showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return AlertBox(
+            title: "開新牌局？",
+            yes: '係呀',
+            no: '唔係',
+            subtitle: "現有牌局可於歷史查閱",
+            action: () async {
+              // playerProvider.deactivateAllPllayer();
+              tableProvider.newTable();
+              Navigator.pop(dialogContext);
+              Navigator.of(dialogContext).pushReplacementNamed('/rule');
+            },
+          );
+        },
+      );
+    }
   }
 }

@@ -10,8 +10,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: Globals().homeScaffoldKey,
-      appBar: TableAppBar(context, Globals().homeScaffoldKey),
+      // key: Globals().homeScaffoldKey,
+      appBar: TableAppBar(),
+      drawer: TableDrawer(scaffoldContext: context),
       body: Stack(
         children: <Widget>[
           // if (!value.isLoading)
@@ -30,7 +31,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      drawer: TableDrawer(scaffoldContext: context),
     );
   }
 }

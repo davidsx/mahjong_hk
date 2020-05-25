@@ -15,8 +15,8 @@ class HistoryScreen extends StatelessWidget {
     final tableProvider = Provider.of<MJProvider>(context, listen: false);
     // final mjProvider = Provider.of<MjProvider>(context, listen: false);
     return Scaffold(
-      key: Globals().historyScaffoldKey,
-      appBar: TableAppBar(context, Globals().historyScaffoldKey),
+      // key: Globals().historyScaffoldKey,
+      appBar: TableAppBar(),
       body: SafeArea(
         bottom: false,
         child: Container(

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mahjong/components/playerHistory.dart';
+import 'package:mahjong/extensions/TransparentInkWell.dart';
+import 'package:mahjong/models/globals.dart';
+import 'package:mahjong/models/table.dart';
 import 'package:mahjong/provider/mj_provider.dart';
 import 'package:mahjong/resources/color.dart';
+import 'package:mahjong/resources/responsive.dart';
+import 'package:mahjong/screens/history.dart';
 import 'package:mahjong/view/alertBox.dart';
 import 'package:provider/provider.dart';
 
@@ -13,140 +19,33 @@ class TableDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final tableProvider = Provider.of<MJProvider>(scaffoldContext);
     // if (tableProvider.table.id.isNotEmpty)
+    print(tableProvider.tableHistory.length);
     return SizedBox(
-      width: MediaQuery.of(context).size.width / 1.25,
+      width: MediaQuery.of(context).size.width / 1.2,
       child: Drawer(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10.0),
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: <Widget>[
-                ListTile(
-                  title: Text(
-                    '香港人麻雀',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+            child: tableProvider.tableHistory.isEmpty
+                ? Center(
+                    child: Text('無記錄',
+                        style: TextStyle(fontSize: 20.0, color: grey)),
+                  )
+                : ListView(
+                    children: <Widget>[
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 10.0),
+                        child: Text(
+                          "歷史牌局",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 25),
+                        ),
+                      ),
+                      Divider(),
+                      for (var t in tableProvider.tableHistory)
+                        historyListTile(t),
+                    ],
                   ),
-                  trailing: Text('v1.0 Beta'),
-                ),
-                ListTile(
-                  title: Text('查看歷史', style: TextStyle(fontSize: 20)),
-                  onTap: () {
-                    tableProvider.loadHistory();
-                    Navigator.of(context).pushReplacementNamed('/history');
-                  },
-                ),
-                Divider(),
-                ListTile(
-                  enabled: tableProvider.isWaiting &&
-                      tableProvider.table.rounds.length > 0,
-                  title: Text('刪除上局',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: tableProvider.isWaiting &&
-                                tableProvider.table.rounds.length > 0
-                            ? black
-                            : grey,
-                      )),
-                  onTap: () {
-                    if (tableProvider.isWaiting) {
-                      bool lastRoundSwitched =
-                          tableProvider.table.rounds.last.isSwitchPlayer;
-                      Navigator.pop(context);
-                      showDialog(
-                        context: context,
-                        builder: (dialogContext) {
-                          return AlertBox(
-                            title: lastRoundSwitched ? "取消換人？" : "刪除上局？",
-                            yes: '係呀',
-                            no: '唔係',
-                            action: () {
-                              lastRoundSwitched
-                                  ? tableProvider.reviseLastSwitch()
-                                  : tableProvider.reviseLastRound();
-                              Navigator.pop(dialogContext);
-                            },
-                          );
-                        },
-                      );
-                    }
-                  },
-                ),
-                ListTile(
-                  enabled: tableProvider.isWaiting &&
-                      tableProvider.table.rounds.length > 0,
-                  title: Text('重新開始',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: tableProvider.isWaiting &&
-                                tableProvider.table.rounds.length > 0
-                            ? black
-                            : grey,
-                      )),
-                  onTap: () {
-                    if (tableProvider.isWaiting) {
-                      Navigator.pop(context);
-                      showDialog(
-                        context: context,
-                        builder: (dialogContext) {
-                          return AlertBox(
-                            title: "重新開始？",
-                            subtitle: tableProvider.table.isPlayerSwitched
-                                ? "(以換人後的玩家重開新局)"
-                                : "",
-                            yes: '係呀',
-                            no: '唔係',
-                            action: () {
-                              tableProvider.restartTable();
-                              Navigator.pop(dialogContext);
-                            },
-                          );
-                        },
-                      );
-                    }
-                  },
-                ),
-                Divider(),
-                ListTile(
-                  enabled: !tableProvider.isSetting,
-                  title: Text('開新牌局',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: tableProvider.isSetting ? grey : black,
-                      )),
-                  onTap: () {
-                    if (!tableProvider.isSetting) {
-                      Navigator.pop(context);
-                      if (tableProvider.isLoading) {
-                        tableProvider.newTable();
-                        Navigator.of(context).pushReplacementNamed('/rule');
-                      } else
-                        showDialog(
-                          context: context,
-                          builder: (dialogContext) {
-                            return AlertBox(
-                              title: "開新牌局？",
-                              yes: '係呀',
-                              no: '唔係',
-                              subtitle: "現有牌局可於歷史查閱",
-                              action: () async {
-                                // playerProvider.deactivateAllPllayer();
-                                tableProvider.newTable();
-                                Navigator.pop(dialogContext);
-                                Navigator.of(dialogContext)
-                                    .pushReplacementNamed('/rule');
-                              },
-                            );
-                          },
-                        );
-                    }
-                  },
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -197,5 +96,133 @@ class TableDrawer extends StatelessWidget {
     //       ),
     //     ),
     //   );
+  }
+
+  historyListTile(TableModel table) {
+    final tableProvider = Provider.of<MJProvider>(scaffoldContext);
+    final theme = ResponsiveTheme(MediaQuery.of(scaffoldContext).size);
+    return Padding(
+      padding: EdgeInsets.only(bottom: 20, left: 10, right: 10),
+      child: TransparentInkWell(
+        onTap: () {
+          if (!table.gameEnd) {
+            tableProvider.continueTable(table.id);
+            tableProvider.setTableID(table.id);
+            Navigator.of(scaffoldContext).pushReplacementNamed('/home');
+          }
+        },
+        child: SizedBox(
+          // height: theme.historyBox,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  for (var p in table.players)
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            FittedBox(
+                              child: Text(p.name,
+                                  style: TextStyle(fontSize: theme.subtitle2)),
+                            ),
+                            Text(p.balance.toString(),
+                                style: TextStyle(
+                                  fontSize: theme.body1,
+                                  color: p.balance == 0
+                                      ? grey
+                                      : p.balance > 0
+                                          ? greenDark
+                                          : p.balance < 0 ? redDark : black,
+                                )),
+                          ],
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    flex: 3,
+                    child: Center(
+                      child: Column(
+                        children: <Widget>[
+                          Text(
+                            "${table.lastUpdated.month}/${table.lastUpdated.day}/${table.lastUpdated.year}",
+                            style: TextStyle(
+                                fontSize: theme.overline, color: grey),
+                          ),
+                          if (table.gameEnd)
+                            Text(
+                              "完結",
+                              style: TextStyle(
+                                  fontSize: theme.body2,
+                                  color: black.withOpacity(0.6)),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.all(5.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  Text(
+                                    (table.rounds ?? []).isNotEmpty
+                                        ? Globals().getWindStageStr(table.stage)
+                                        : "東1",
+                                    style: TextStyle(
+                                        fontSize: theme.caption,
+                                        color: black.withOpacity(0.6)),
+                                  ),
+                                  Icon(Icons.arrow_forward_ios, size: 18),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+              //   children: <Widget>[
+              //     Text(
+              //       "${table.lastUpdated.month}/${table.lastUpdated.day}/${table.lastUpdated.year}",
+              //       style: TextStyle(fontSize: theme.overline, color: grey),
+              //     ),
+              //     if (table.gameEnd)
+              //       Text(
+              //         "完結",
+              //         style: TextStyle(
+              //             fontSize: theme.body2, color: black.withOpacity(0.6)),
+              //       )
+              //     else
+              //       Padding(
+              //         padding: const EdgeInsets.all(5.0),
+              //         child: Row(
+              //           mainAxisAlignment: MainAxisAlignment.center,
+              //           children: <Widget>[
+              //             Text(
+              //               (table.rounds ?? []).isNotEmpty
+              //                   ? Globals().getWindStageStr(table.stage)
+              //                   : "東1",
+              //               style: TextStyle(
+              //                   fontSize: theme.caption,
+              //                   color: black.withOpacity(0.6)),
+              //             ),
+              //             Icon(Icons.arrow_forward_ios, size: 18),
+              //           ],
+              //         ),
+              //       ),
+              //   ],
+              // )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -77,7 +77,7 @@ class _BottomAreaState extends State<BottomArea> {
               ],
             ),
           )
-        else if (tableProvider.isWaiting || tableProvider.isLoading)
+        else if (tableProvider.isPlaying || tableProvider.isLoading)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
@@ -99,7 +99,8 @@ class _BottomAreaState extends State<BottomArea> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    if (tableProvider.state == TableState.WaitingWinner)
+                    if (tableProvider.state == TableState.WaitingWinner ||
+                        tableProvider.isHandlingEvent)
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20.0,
@@ -332,22 +333,76 @@ class _BottomAreaState extends State<BottomArea> {
               ],
             ),
           )
-        else if (tableProvider.state == TableState.GameEnd)
+        else if (tableProvider.isGameEnd)
           Center(
-            child: Text(
-              "完",
-              style: TextStyle(fontSize: 30.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  "完",
+                  style: TextStyle(fontSize: 30.0),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 10.0,
+                  ),
+                  child: CustomRaisedButton(
+                    context,
+                    color: white.withOpacity(0.9),
+                    subcolor: white.withOpacity(0.5),
+                    text: '執位',
+                    onPressed: () => tableProvider.rearrangeSeat(),
+                  ),
+                ),
+              ],
             ),
           )
         else if (tableProvider.state == TableState.RearrageSeat)
-          AspectRatio(
-            aspectRatio: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Center(
-                child: PlayerList(Globals().lastPlayers),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Center(
+                      child: PlayerList(Globals().lastPlayers),
+                    ),
+                  ),
+                ),
               ),
-            ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5.0, right: 10.0),
+                    child: CustomRaisedButton(
+                      context,
+                      color: white.withOpacity(0.9),
+                      subcolor: white.withOpacity(0.5),
+                      text: '重選',
+                      onPressed: !tableProvider.table.isPlayerEmpty
+                          ? () => tableProvider.removeAllPlayer()
+                          : null,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5.0, left: 10.0),
+                    child: CustomRaisedButton(
+                      context,
+                      color: greenLight.withOpacity(0.9),
+                      subcolor: greenLight.withOpacity(0.5),
+                      text: '開枱',
+                      onPressed: tableProvider.table.isPlayerReady
+                          ? () => tableProvider.continueGame()
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           )
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mahjong/components/instructionBox.dart';
 import 'package:mahjong/components/playerBox.dart';
 import 'package:mahjong/extensions/TransparentInkWell.dart';
 import 'package:mahjong/models/globals.dart';
@@ -9,7 +10,24 @@ import 'package:mahjong/view/skeleton.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 
-class TableBox extends StatelessWidget {
+class TableBox extends StatefulWidget {
+  @override
+  _TableBoxState createState() => _TableBoxState();
+}
+
+class _TableBoxState extends State<TableBox>
+    with SingleTickerProviderStateMixin {
+  AnimationController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = AnimationController(
+      duration: Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tableProvider = Provider.of<MJProvider>(context);
@@ -23,7 +41,7 @@ class TableBox extends StatelessWidget {
           // ! For Testing
           // Align(alignment: Alignment.topLeft, child: Text("-1.0")),
           // Align(alignment: Alignment.bottomRight, child: Text("1.0")),
-          // if (value.isWaiting)
+          // if (tableProvider.isWaiting)
           //   Positioned(
           //     top: 50,
           //     left: 10,
@@ -36,6 +54,7 @@ class TableBox extends StatelessWidget {
           //         ),
           //       ),
           //       onTap: () {
+          //         print("hello");
           //         tableProvider.gameEnd();
           //       },
           //     ),
@@ -64,10 +83,16 @@ class TableBox extends StatelessWidget {
               ),
             ),
           // * Ruleset
-          if (!tableProvider.isSwitching)
+          if (tableProvider.isLoading)
             Positioned(
+              top: 10,
               left: 10,
-              bottom: 10,
+              child: Skeleton(height: 30, width: 50, borderRadius: 3),
+            )
+          else if (tableProvider.isPlaying || tableProvider.isSetting)
+            Positioned(
+              top: 10,
+              left: 10,
               child: Container(
                 padding: EdgeInsets.all(3),
                 decoration: BoxDecoration(
@@ -81,25 +106,6 @@ class TableBox extends StatelessWidget {
                 ),
               ),
             ),
-          // * SwitchPlayer Start
-          if (tableProvider.isWaiting)
-            Positioned(
-              top: 10,
-              left: 10,
-              child: TransparentInkWell(
-                child: Text(
-                  "換人",
-                  style: TextStyle(
-                    color: blue,
-                    decoration: TextDecoration.underline,
-                    fontSize: theme.caption,
-                  ),
-                ),
-                onTap: () {
-                  tableProvider.switchPlayer();
-                },
-              ),
-            ),
           // * Wind + Stage
           if (tableProvider.isLoading)
             Positioned(
@@ -107,7 +113,7 @@ class TableBox extends StatelessWidget {
               right: 10,
               child: Skeleton(height: 30, width: 50, borderRadius: 15.0),
             )
-          else if (tableProvider.isWaiting)
+          else if (tableProvider.isPlaying)
             Positioned(
               top: 10,
               right: 10,
@@ -130,27 +136,25 @@ class TableBox extends StatelessWidget {
               ),
             ),
           // * PlayerBox
+          // if (tableProvider.isPlaying || tableProvider.isSetting)
           Center(
             child: AspectRatio(
               aspectRatio: 1,
               child: Stack(
+                alignment: Alignment.center,
                 children: <Widget>[
-                  if (tableProvider.isWaiting ||
-                      tableProvider.state == TableState.SettingReady)
-                    Center(
-                      child: FractionallySizedBox(
-                        widthFactor: 6 / 7,
-                        child: AspectRatio(
-                          aspectRatio: 1,
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Transform.rotate(
-                              angle:
-                                  tableProvider.table.dealer * (-math.pi / 2),
-                              child: CustomPaint(
-                                size: Size.infinite,
-                                painter: TableCirclePainter(),
-                              ),
+                  if (!tableProvider.isGameEnd && !tableProvider.isSetting)
+                    FractionallySizedBox(
+                      widthFactor: 6 / 7,
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Transform.rotate(
+                            angle: tableProvider.table.dealer * (-math.pi / 2),
+                            child: CustomPaint(
+                              size: Size.infinite,
+                              painter: TableCirclePainter(),
                             ),
                           ),
                         ),
@@ -164,23 +168,11 @@ class TableBox extends StatelessWidget {
                         i % 2 == 0 ? 0.0 : (2.0 - i), // ? x
                         i % 2 == 1 ? 0.0 : (1.0 - i), // ? y
                       ),
-                      child: TablePlayerBox(i),
+                      child: TablePlayerBox(i, controller),
                     ),
-                  Center(
-                    child: FractionallySizedBox(
-                      widthFactor: 1 / 3,
-                      child: AspectRatio(
-                        aspectRatio: 1,
-                        child: Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: Image(
-                            image: AssetImage("assets/icon_no_bg.png"),
-                            width: 150,
-                            height: 150,
-                          ),
-                        ),
-                      ),
-                    ),
+                  FractionallySizedBox(
+                    widthFactor: 1 / 3,
+                    child: InstructionBox(controller),
                   ),
                 ],
               ),

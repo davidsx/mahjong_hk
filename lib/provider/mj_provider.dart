@@ -23,6 +23,7 @@ enum TableState {
   SwitchingPlayerLeave,
   SwitchingPlayerAdd,
   SwitchingPlayerConfirm,
+  HandlingEvent,
   GameEnd,
   RearrageSeat
 }
@@ -67,7 +68,8 @@ class MJProvider extends ChangeNotifier {
       state == TableState.SettingTable ||
       // state == TableState.SettingSeat ||
       state == TableState.SettingStarter ||
-      state == TableState.SettingReady;
+      state == TableState.SettingReady ||
+      state == TableState.RearrageSeat;
   bool get isWaiting =>
       state == TableState.WaitingWinner ||
       state == TableState.WaitingLoser ||
@@ -81,6 +83,9 @@ class MJProvider extends ChangeNotifier {
       state == TableState.SwitchingPlayerLeave ||
       state == TableState.SwitchingPlayerAdd ||
       state == TableState.SwitchingPlayerConfirm;
+  bool get isHandlingEvent => state == TableState.HandlingEvent;
+  bool get isPlaying => isWaiting || isHandlingEvent;
+  bool get isGameEnd => state == TableState.GameEnd;
 
   bool get dealerChange =>
       table.dealer != table.players.indexWhere((p) => p.name == tmpWinner);
@@ -163,6 +168,12 @@ class MJProvider extends ChangeNotifier {
     // db.newTable(table);
     service.insert(tableRoute, table);
     setTableID(table.id);
+  }
+
+  continueGame() {
+    state = TableState.SettingStarter;
+    table.continueGame();
+    notifyListeners();
   }
 
   winnerFound(String winner, [bool isSelfDraw = false]) {
@@ -272,7 +283,7 @@ class MJProvider extends ChangeNotifier {
   }
 
   loadHistory() {
-    state = TableState.LoadingHistory;
+    // state = TableState.LoadingHistory;
     loadTableHistory();
     notifyListeners();
   }
@@ -281,6 +292,7 @@ class MJProvider extends ChangeNotifier {
     List<Round> rounds = table.rounds;
     table.restart();
     _clearRound();
+    state = TableState.WaitingWinner;
     notifyListeners();
     // db.cleanTable(table);
     service.update(tableRoute, table);
@@ -334,6 +346,11 @@ class MJProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  removeAllPlayer() {
+    table.emptyTable();
+    notifyListeners();
+  }
+
   continueTable(String tableID) async {
     state = TableState.LoadingTable;
     table = TableModel.init();
@@ -384,5 +401,15 @@ class MJProvider extends ChangeNotifier {
         });
       });
     });
+  }
+
+  startEventHandling() {
+    state = TableState.HandlingEvent;
+    notifyListeners();
+  }
+
+  endEventHandling() {
+    state = TableState.WaitingWinner;
+    notifyListeners();
   }
 }

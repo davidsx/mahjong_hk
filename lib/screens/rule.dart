@@ -12,9 +12,9 @@ class RuleScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: Globals().ruleScaffoldKey,
+      // key: Globals().ruleScaffoldKey,
       //resizeToAvoidBottomInset: false,
-      appBar: TableAppBar(context, Globals().ruleScaffoldKey),
+      appBar: TableAppBar(),
       body: SafeArea(
         bottom: false,
         child: Container(
